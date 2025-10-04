@@ -22,6 +22,8 @@
 #include <unordered_set> // for hash similiar to dict in python 
 #include <fstream> // For file handling
 #include <sstream> // For string stream to parse file - csv
+#include <iomanip> // For formatting output tables
+#include <algorithm> // For count_if
 using namespace std;
 
 
@@ -96,14 +98,19 @@ void initFrames(int numFrames, int frameSize) {
 
 // Function to load job pages into page frames randomly
 void assignPageFrames(Job &job){
-    srand(time(0)); // Seed for randomness
-    unordered_set<int> assignedFrames; // To avoid duplicate frame assignments
+    // check if memory has enough free frames for this job
+    int freeFrames = count_if(memoryFrames.begin(), memoryFrames.end(), [](PageFrame &f){ return f.isFree; });
+    if (job.pages.size() > freeFrames) {
+        cerr << "Not enough free frames to load Job ID " << job.jobID << endl;
+        return;
+    }
 
     for (int page: job.pages) {
         int frameIndex;
         do {
             frameIndex = rand() % memoryFrames.size();
-        } while (!memoryFrames[frameIndex].isFree || assignedFrames.find(frameIndex) != assignedFrames.end());
+        } while (!memoryFrames[frameIndex].isFree);
+        
         // Assign frame to page
         memoryFrames[frameIndex].isFree = false;
         memoryFrames[frameIndex].jobID = job.jobID;
@@ -111,7 +118,7 @@ void assignPageFrames(Job &job){
 
         // Mark frame as assigned
         job.pageTable[page] = memoryFrames[frameIndex].frameID;
-}
+    }
 }
 
 // Job list array
@@ -136,33 +143,33 @@ void assignPageFrames(Job &job){
 */
 void displayTables(const vector<Job> &jobs) {
     cout << "\n--- Job Table ---\n";
-    cout << "Job ID\tJob Size\tNo. of Pages\tInternal Fragmentation\n";
+    cout << left << setw(8) << "Job ID" << setw(12) << "Job Size" << setw(14) << "No. of Pages" << setw(24) << "Internal Fragmentation" << "\n";
     for (const auto &job : jobs) {
-        cout << job.jobID << "\t" << job.jobSize << "\t\t" << job.pages.size()
-                << "\t\t" << job.internalFragmentation << "\n";
+        cout << left << setw(8) << job.jobID << setw(12) << job.jobSize
+             << setw(14) << job.pages.size() << setw(24) << job.internalFragmentation << "\n";
     }
 
     cout << "\n--- Page Map Table ---\n";
-    cout << "Job ID\tPage Number\tFrame Number\n";
+    cout << left << setw(8) << "Job ID" << setw(14) << "Page Number" << setw(14) << "Frame Number" << "\n";
     for (const auto &job : jobs) {
         for (const auto &page : job.pages) {
-            cout << job.jobID << "\t" << page << "\t\t";
+            cout << left << setw(8) << job.jobID << setw(14) << page;
             if (job.pageTable.find(page) != job.pageTable.end()) {
-                cout << job.pageTable.at(page) << "\n";
+                cout << setw(14) << job.pageTable.at(page) << "\n";
             } else {
-                cout << "Not Loaded\n";
+                cout << setw(14) << "Not Loaded" << "\n";
             }
         }
     }
 
     cout << "\n--- Memory Map Table ---\n";
-    cout << "Frame Number\tStatus\t\tJob ID\tPage Number\n";
+    cout << left << setw(14) << "Frame Number" << setw(14) << "Status" << setw(14) << "Job ID" << setw(14) << "Page Number" << "\n";
     for (const auto &frame : memoryFrames) {
-        cout << frame.frameID << "\t\t";
+        cout << left << setw(14) << frame.frameID;
         if (frame.isFree) {
-            cout << "Free\t\t-\t-\n";
+            cout << setw(14) << "Free" << setw(14) << "-" << setw(14) << "-" << "\n";
         } else {
-            cout << "Occupied\t" << frame.jobID << "\t" << frame.pageNumber << "\n";
+            cout << setw(14) << "Occupied" << setw(14) << frame.jobID << setw(14) << frame.pageNumber << "\n";
         }
     }
     cout << endl;
@@ -200,19 +207,67 @@ vector<Job> importJobsFromFile(string filename, int pagesize) {
     return jobs;
 }   
 
+// Address resolution function
+// Resolve logical address based on user input
+void resolveAddress(Job &job, int logicalAddress) {
+    int pageNumber = logicalAddress / job.pageSize;
+    int offset = logicalAddress % job.pageSize;
+
+    if (pageNumber >= job.pages.size()) {
+        cout << "Logical address out of bounds for Job ID " << job.jobID << endl;
+        return;
+    }
+
+    if (job.pageTable.find(pageNumber) == job.pageTable.end()) {
+        cout << "Page " << pageNumber << " not loaded in memory for Job ID " << job.jobID << endl;
+        return;
+    }
+
+    int frameNumber = job.pageTable[pageNumber];
+    int physicalAddress = frameNumber * job.pageSize + offset;
+
+    cout << "Logical Address: " << logicalAddress << " -> Physical Address: " << physicalAddress
+         << " (Frame: " << frameNumber << ", Offset: " << offset << ")\n";
+}
 
 
 int main() {
-    // Initialize memory with 8 frames of size 256
+    srand(time(0)); // seed once
+
     initFrames(8, 256);
 
-    // Example: 1 job
-    Job j1{1, 1200, 256}; 
-    divideJobIntoPages(j1);
-    assignPageFrames(j1);
+    // Import jobs
+    vector<Job> jobs = importJobsFromFile("jobs.csv", 256);
 
-    vector<Job> jobs = {j1};
-    displayTables(jobs);
+    // Assign pages for each job
+    for (auto &job : jobs) {
+        assignPageFrames(job);
+    }
+
+    int choice;
+    do {
+        cout << "\nMENU\n";
+        cout << "1. View Tables\n";
+        cout << "2. Resolve Address\n";
+        cout << "3. Exit\n";
+        cout << "Enter choice: ";
+        cin >> choice;
+
+        if (choice == 1) {
+            displayTables(jobs);
+        } 
+        else if (choice == 2) {
+            int jobID, addr;
+            cout << "Enter Job ID and Logical Address: ";
+            cin >> jobID >> addr;
+            auto it = find_if(jobs.begin(), jobs.end(), [jobID](Job &j){ return j.jobID == jobID; });
+            if (it != jobs.end()) {
+                resolveAddress(*it, addr);
+            } else {
+                cout << "Job ID not found.\n";
+            }
+        }
+    } while (choice != 3);
 
     return 0;
 }
