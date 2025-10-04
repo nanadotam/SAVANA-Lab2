@@ -20,6 +20,8 @@
 #include <ctime>  
 #include <list>
 #include <unordered_set> // for hash similiar to dict in python 
+#include <fstream> // For file handling
+#include <sstream> // For string stream to parse file - csv
 using namespace std;
 
 
@@ -80,6 +82,7 @@ void divideJobIntoPages(Job &job) {
 }
 
 // Global memory frames
+// Physical memory simulation
 vector<PageFrame> memoryFrames;
 
 // init mem frames
@@ -131,39 +134,85 @@ void assignPageFrames(Job &job){
     - job ID (if occupied)
     - page number (if occupied)
 */
-
 void displayTables(const vector<Job> &jobs) {
     cout << "\n--- Job Table ---\n";
     cout << "Job ID\tJob Size\tNo. of Pages\tInternal Fragmentation\n";
     for (const auto &job : jobs) {
-        cout << job.jobID << "\t" << job.jobSize << "\t\t" << job.pages.size() << "\t\t" << job.internalFragmentation << "\n";
+        cout << job.jobID << "\t" << job.jobSize << "\t\t" << job.pages.size()
+                << "\t\t" << job.internalFragmentation << "\n";
     }
 
     cout << "\n--- Page Map Table ---\n";
     cout << "Job ID\tPage Number\tFrame Number\n";
     for (const auto &job : jobs) {
         for (const auto &page : job.pages) {
+            cout << job.jobID << "\t" << page << "\t\t";
             if (job.pageTable.find(page) != job.pageTable.end()) {
-                cout << job.jobID << "\t" << page << "\t\t" << job.pageTable.at(page) << "\n";
+                cout << job.pageTable.at(page) << "\n";
             } else {
-                cout << job.jobID << "\t" << page << "\t\t" << "Not Loaded\n";
+                cout << "Not Loaded\n";
             }
         }
     }
 
     cout << "\n--- Memory Map Table ---\n";
     cout << "Frame Number\tStatus\t\tJob ID\tPage Number\n";
-    for (const auto &frame : jobList[0].pageTable) {
-        cout << frame.second << "\t\t";
-        if (frame.second == -1) {
+    for (const auto &frame : memoryFrames) {
+        cout << frame.frameID << "\t\t";
+        if (frame.isFree) {
             cout << "Free\t\t-\t-\n";
         } else {
-            cout << "Occupied\t" << frame.first << "\t" << frame.second << "\n";
+            cout << "Occupied\t" << frame.jobID << "\t" << frame.pageNumber << "\n";
         }
     }
     cout << endl;
 }
 
+
 // Import jobs from a csv file to populate into the job list
-void importJobsFromFile() {
+vector<Job> importJobsFromFile(string filename, int pagesize) {
+    vector<Job> jobs;
+    ifstream file(filename);
+    string line;
+
+    if (!file.is_open()) {
+        cerr << "Error opening file: " << filename << endl;
+        return jobs;
+    }
+
+    while (getline(file, line)) {
+        stringstream ss(line);
+        string token;
+        Job job;
+
+        // CSV format: jobID, jobSize
+        getline(ss, token, ',');
+        job.jobID = stoi(token);
+        getline(ss, token, ',');
+        job.jobSize = stoi(token);
+        job.pageSize = pagesize;
+
+        divideJobIntoPages(job);
+        jobs.push_back(job);
+    }
+
+    file.close();
+    return jobs;
+}   
+
+
+
+int main() {
+    // Initialize memory with 8 frames of size 256
+    initFrames(8, 256);
+
+    // Example: 1 job
+    Job j1{1, 1200, 256}; 
+    divideJobIntoPages(j1);
+    assignPageFrames(j1);
+
+    vector<Job> jobs = {j1};
+    displayTables(jobs);
+
+    return 0;
 }
