@@ -227,7 +227,7 @@ void resolveAddress(Job &job, int logicalAddress) {
     int physicalAddress = frameNumber * job.pageSize + offset;
 
     cout << "Logical Address: " << logicalAddress << " -> Physical Address: " << physicalAddress
-         << " (Frame: " << frameNumber << ", Offset: " << offset << ")\n";
+        << " (Frame: " << frameNumber << ", Offset: " << offset << ")\n";
 }
 
 
