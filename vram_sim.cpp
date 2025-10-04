@@ -24,6 +24,8 @@
 #include <sstream> // For string stream to parse file - csv
 #include <iomanip> // For formatting output tables
 #include <algorithm> // For count_if
+#include <thread>   // For sleep in simulate
+#include <chrono>   // For sleep in simulate
 using namespace std;
 
 
@@ -68,6 +70,8 @@ void divideJobIntoPages(Job &job) {
     // calc num pages and displacement
     int numPages = job.jobSize / job.pageSize;
     int remainingBytes = job.jobSize % job.pageSize;
+
+    // internal fragmentation - wasted space inside the last allocated page of a job
 
     // If there are remaining bytes, we need an additional page
     if (remainingBytes > 0) {
@@ -230,44 +234,115 @@ void resolveAddress(Job &job, int logicalAddress) {
         << " (Frame: " << frameNumber << ", Offset: " << offset << ")\n";
 }
 
+// Function to preview jobs from CSV
+void previewJobs(const vector<Job> &jobs) {
+    cout << "\nJobs Loaded from CSV:\n";
+    cout << left << setw(8) << "Job ID" << setw(12) << "Job Size" << setw(14) << "Pages" << setw(20) << "Fragmentation" << "\n";
+    for (auto &job : jobs) {
+        cout << left << setw(8) << job.jobID << setw(12) << job.jobSize 
+             << setw(14) << job.pages.size() << setw(20) << job.internalFragmentation << "\n";
+    }
+}
+
+// Function to show empty memory map
+void showEmptyMemory() {
+    cout << "\nInitial Memory State (All Free):\n";
+    for (auto &frame : memoryFrames) {
+        cout << "Frame " << frame.frameID << " | Free\n";
+    }
+}
+
+// Function to simulate allocation with delay
+void simulateAllocation(vector<Job> &jobs) {
+    cout << "\nSimulating page allocation...\n";
+    for (auto &job : jobs) {
+        cout << "Allocating Job " << job.jobID << "...\n";
+        assignPageFrames(job);
+        this_thread::sleep_for(chrono::milliseconds(700));
+    }
+    cout << "Allocation complete.\n";
+}
+
+// Function to show memory stats
+void showMemoryStats() {
+    int totalFrames = memoryFrames.size();
+    int usedFrames = count_if(memoryFrames.begin(), memoryFrames.end(), [](PageFrame &f){ return !f.isFree; });
+    int freeFrames = totalFrames - usedFrames;
+
+    cout << "\n--- Memory Stats ---\n";
+    cout << "Total Frames: " << totalFrames << "\n";
+    cout << "Used Frames : " << usedFrames << "\n";
+    cout << "Free Frames : " << freeFrames << "\n";
+    cout << "Usage       : " << (usedFrames * 100 / totalFrames) << "%\n";
+}
+
 
 int main() {
     srand(time(0)); // seed once
 
-    initFrames(8, 256);
+    // Initialize the memory frames
+    // no. of frames, frame size
+    initFrames(10, 512);
 
     // Import jobs
-    vector<Job> jobs = importJobsFromFile("jobs.csv", 256);
+    vector<Job> jobs = importJobsFromFile("jobs.csv", 512);
 
-    // Assign pages for each job
-    for (auto &job : jobs) {
-        assignPageFrames(job);
-    }
+    // ASCII banner
+    cout << "┏┓┏┓┓┏┏┓┳┓┏┓  ┳┳┓┏┓┳┳┓┏┓┳┓┓┏\n";
+    cout << "┗┓┣┫┃┃┣┫┃┃┣┫  ┃┃┃┣ ┃┃┃┃┃┣┫┗┫\n";
+    cout << "┗┛┛┗┗┛┛┗┛┗┛┗  ┛ ┗┗┛┛ ┗┗┛┛┗┗┛\n";
+
+    cout << "\nWelcome to the Virtual Memory Simulator!\n";
+
+    // Preview jobs and empty memory
+    previewJobs(jobs);
+    showEmptyMemory();
 
     int choice;
     do {
-        cout << "\nMENU\n";
-        cout << "1. View Tables\n";
-        cout << "2. Resolve Address\n";
-        cout << "3. Exit\n";
+        cout << "\nMAIN MENU\n";
+        cout << "1. Simulate Page Allocation\n";
+        cout << "2. View Tables\n";
+        cout << "3. Resolve Address\n";
+        cout << "4. View Memory Stats\n";
+        cout << "5. Exit\n";
         cout << "Enter choice: ";
         cin >> choice;
 
         if (choice == 1) {
-            displayTables(jobs);
+            simulateAllocation(jobs);
         } 
         else if (choice == 2) {
+            displayTables(jobs);
+        } 
+        else if (choice == 3) {
+            cout << "\nCurrent Memory Map:\n";
+            for (auto &frame : memoryFrames) {
+                if (!frame.isFree) {
+                    cout << "Frame " << frame.frameID << " -> Job " << frame.jobID 
+                                << " Page " << frame.pageNumber << "\n";
+                }
+            }
             int jobID, addr;
-            cout << "Enter Job ID and Logical Address: ";
-            cin >> jobID >> addr;
+            cout << "Enter Job ID: ";
+            cin >> jobID;
+
             auto it = find_if(jobs.begin(), jobs.end(), [jobID](Job &j){ return j.jobID == jobID; });
             if (it != jobs.end()) {
+                // Show the valid address range for this job
+                cout << "Job " << jobID << " has size " << it->jobSize 
+                    << " bytes (valid logical addresses: 0 - " << (it->jobSize - 1) << ")\n";
+        
+                int addr;
+                cout << "Enter Logical Address to resolve (e.g., 0, 128, 512...): ";
+                cin >> addr;
+
                 resolveAddress(*it, addr);
             } else {
                 cout << "Job ID not found.\n";
             }
         }
-    } while (choice != 3);
-
+    } while (choice != 5);
+    cout << "Exiting simulator. Goodbye!\n";
     return 0;
 }
