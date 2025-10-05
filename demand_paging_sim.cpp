@@ -514,3 +514,5 @@ int main() {
 
 
 // TODO: Remove the internal fragmentation calculation and preview when jobs are loaded since it's not relevant in demand paging
+// TODO: Fix no. 6 option || SHOULDN'T EVEN BE HERE!!! 
+// TODO: Fix simulator
