@@ -515,4 +515,11 @@ int main() {
 
 // TODO: Remove the internal fragmentation calculation and preview when jobs are loaded since it's not relevant in demand paging
 // TODO: Fix no. 6 option || SHOULDN'T EVEN BE HERE!!! 
+// no base case, infinite loop
 // TODO: Fix simulator
+
+// TODO: Add comments to functions
+// TODO: REFACTOR page map table view to include extra data such as the status, modified, referenced bits and page frame no.
+
+
+// how do we know which part to load - maybe we can use a random seed
