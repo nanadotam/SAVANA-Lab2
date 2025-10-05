@@ -92,6 +92,11 @@ void divideJobIntoPages(Job &job) {
 vector<PageFrame> memoryFrames;
 
 // init mem frames
+/*
+This function allows the user to specify how 
+many page frames exist in memory and the size 
+for each
+ */
 void initFrames(int numFrames, int frameSize) {
     memoryFrames.clear();
     for (int i = 0; i < numFrames; i++) {
@@ -150,7 +155,7 @@ void displayTables(const vector<Job> &jobs) {
     cout << left << setw(8) << "Job ID" << setw(12) << "Job Size" << setw(14) << "No. of Pages" << setw(24) << "Internal Fragmentation" << "\n";
     for (const auto &job : jobs) {
         cout << left << setw(8) << job.jobID << setw(12) << job.jobSize
-             << setw(14) << job.pages.size() << setw(24) << job.internalFragmentation << "\n";
+                << setw(14) << job.pages.size() << setw(24) << job.internalFragmentation << "\n";
     }
 
     cout << "\n--- Page Map Table ---\n";
@@ -240,7 +245,7 @@ void previewJobs(const vector<Job> &jobs) {
     cout << left << setw(8) << "Job ID" << setw(12) << "Job Size" << setw(14) << "Pages" << setw(20) << "Fragmentation" << "\n";
     for (auto &job : jobs) {
         cout << left << setw(8) << job.jobID << setw(12) << job.jobSize 
-             << setw(14) << job.pages.size() << setw(20) << job.internalFragmentation << "\n";
+                << setw(14) << job.pages.size() << setw(20) << job.internalFragmentation << "\n";
     }
 }
 
@@ -292,7 +297,7 @@ int main() {
     cout << "┗┓┣┫┃┃┣┫┃┃┣┫  ┃┃┃┣ ┃┃┃┃┃┣┫┗┫\n";
     cout << "┗┛┛┗┗┛┛┗┛┗┛┗  ┛ ┗┗┛┛ ┗┗┛┛┗┗┛\n";
 
-    cout << "\nWelcome to the Virtual Memory Simulator!\n";
+    cout << "\nWelcome to the Paged Memory Allocation Simulator!\n";
 
     // Preview jobs and empty memory
     previewJobs(jobs);
@@ -304,8 +309,7 @@ int main() {
         cout << "1. Simulate Page Allocation\n";
         cout << "2. View Tables\n";
         cout << "3. Resolve Address\n";
-        cout << "4. View Memory Stats\n";
-        cout << "5. Exit\n";
+        cout << "4. Exit\n";
         cout << "Enter choice: ";
         cin >> choice;
 
@@ -342,7 +346,13 @@ int main() {
                 cout << "Job ID not found.\n";
             }
         }
-    } while (choice != 5);
+    } while (choice != 4);
     cout << "Exiting simulator. Goodbye!\n";
     return 0;
 }
+
+
+
+
+// TODO: Simulate the jobs with event-driven time units and then delay
+// TODO: Verify the displacement calculation (algorithm) in address resolution

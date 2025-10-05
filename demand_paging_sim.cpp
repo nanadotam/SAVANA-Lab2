@@ -337,11 +337,11 @@ void resolveAddress(Job &job, int logicalAddress, vector<Job> &allJobs) {
 void previewJobs(const vector<Job> &jobs) {
     cout << "\njobs loaded from csv:\n";
     cout << left << setw(8) << "job id" << setw(12) << "job size" << setw(14) << "pages" 
-         << setw(16) << "pages loaded" << setw(16) << "page faults" << setw(20) << "fragmentation" << "\n";
+            << setw(16) << "pages loaded" << setw(16) << "page faults" << setw(20) << "fragmentation" << "\n";
     for (auto &job : jobs) {
         cout << left << setw(8) << job.jobID << setw(12) << job.jobSize 
-             << setw(14) << job.pages.size() << setw(16) << job.loadedPages.size() 
-             << setw(16) << job.pageFaults << setw(20) << job.internalFragmentation << "\n";
+                << setw(14) << job.pages.size() << setw(16) << job.loadedPages.size() 
+                << setw(16) << job.pageFaults << setw(20) << job.internalFragmentation << "\n";
     }
 }
 
@@ -510,3 +510,7 @@ int main() {
     cout << "Exiting simulator. Goodbye!\n";
     return 0;
 }
+
+
+
+// TODO: Remove the internal fragmentation calculation and preview when jobs are loaded since it's not relevant in demand paging
