@@ -1,4 +1,4 @@
-/* DEMAN PAGING MEMORY ALLOCATION SIMULATION
+/* PAGED MEMORY ALLOCATION SIMULATION
     •  Accept a Job
     •  Divide the Job into pages based on a specify size
 
@@ -257,16 +257,43 @@ void showEmptyMemory() {
     }
 }
 
+// // Function to simulate allocation with delay
+// void simulateAllocation(vector<Job> &jobs) {
+//     cout << "\nSimulating page allocation...\n";
+//     for (auto &job : jobs) {
+//         cout << "Allocating Job " << job.jobID << "...\n";
+//         assignPageFrames(job);
+//         this_thread::sleep_for(chrono::milliseconds(700));
+//     }
+//     cout << "Allocation complete.\n";
+// }
+
+
 // Function to simulate allocation with delay
 void simulateAllocation(vector<Job> &jobs) {
-    cout << "\nSimulating page allocation...\n";
+    cout << "\n--- Event-Driven Simulation of Page Allocation ---\n";
+    int timeUnit = 0;
+
     for (auto &job : jobs) {
-        cout << "Allocating Job " << job.jobID << "...\n";
+        // simulate job arrival as an event
+        cout << "Time " << timeUnit << ": Job " << job.jobID << " arrives.\n";
+        this_thread::sleep_for(chrono::milliseconds(800));
+
+        // simulate allocation of this job
+        cout << "Time " << (timeUnit+1) << ": Allocating Job " << job.jobID << " into memory...\n";
         assignPageFrames(job);
-        this_thread::sleep_for(chrono::milliseconds(700));
+        this_thread::sleep_for(chrono::milliseconds(1000));
+
+        // display updated tables after allocation
+        displayTables(jobs);
+
+        // increment the event clock
+        timeUnit += 2;
     }
-    cout << "Allocation complete.\n";
+
+    cout << "\nSimulation finished at time " << timeUnit << "\n";
 }
+
 
 // Function to show memory stats
 void showMemoryStats() {
